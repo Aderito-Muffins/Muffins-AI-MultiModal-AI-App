@@ -31,6 +31,6 @@ app.use("/images", imagesRouter);
 app.use("/files", fileRouter);
 app.use("/auth", authRouter);
 
-app.listen(3050, () => {
-  console.log("Server started on port 3050");
+app.listen(process.env.PORT || 3000, () => {
+  console.log("Server started on port 3000");
 });
