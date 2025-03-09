@@ -152,7 +152,7 @@ export function Settings() {
           );
         })}
       </View>
-      <View style={styles.titleContainer}>
+      {/* <View style={styles.titleContainer}>
         <Text style={styles.mainText}>Modelo de Imagem</Text>
       </View>
       <View style={styles.buttonContainer}>
@@ -220,7 +220,7 @@ export function Settings() {
             </TouchableHighlight>
           ))}
         </View>
-      </View>
+      </View> */}
     </ScrollView>
   );
 }

@@ -3,6 +3,7 @@ import cors from "cors"; // Importe o pacote cors
 import chatRouter from "./chat/chatRouter";
 import imagesRouter from "./images/imagesRouter";
 import fileRouter from "./files/fileRouter";
+import authRouter from "./auth/authRouter";
 import bodyParser from "body-parser";
 import "dotenv/config";
 
@@ -28,6 +29,7 @@ app.get("/", (req, res) => {
 app.use("/chat", chatRouter);
 app.use("/images", imagesRouter);
 app.use("/files", fileRouter);
+app.use("/auth", authRouter);
 
 app.listen(3050, () => {
   console.log("Server started on port 3050");

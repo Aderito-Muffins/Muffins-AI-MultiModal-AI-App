@@ -139,24 +139,6 @@ export function Chat() {
     await Clipboard.setStringAsync(text);
   }
 
-  async function showClipboardActionsheet(text) {
-    const cancelButtonIndex = 2;
-    showActionSheetWithOptions(
-      {
-        options: ["Copy to clipboard", "Clear chat", "cancel"],
-        cancelButtonIndex,
-      },
-      (selectedIndex) => {
-        if (selectedIndex === Number(0)) {
-          copyToClipboard(text);
-        }
-        if (selectedIndex === 1) {
-          clearChat();
-        }
-      }
-    );
-  }
-
   async function clearChat() {
     if (loading) return;
     if (chatType.label.includes("claude")) {
@@ -209,7 +191,23 @@ export function Chat() {
       )}
     </View>
   );
-
+  async function showClipboardActionsheet(text) {
+    const cancelButtonIndex = 2;
+    showActionSheetWithOptions(
+      {
+        options: ["Copy to clipboard", "Clear chat", "cancel"],
+        cancelButtonIndex,
+      },
+      (selectedIndex) => {
+        if (selectedIndex === Number(0)) {
+          copyToClipboard(text);
+        }
+        if (selectedIndex === 1) {
+          clearChat();
+        }
+      }
+    );
+  }
   return (
     <KeyboardAvoidingView
       behavior="padding"
@@ -223,7 +221,10 @@ export function Chat() {
         {messages.length === 0 && (
           <View style={styles.midChatInputWrapper}>
             <Text style={styles.assistantIntroText}>
-              Sou o assistente Muffins AI, pronto para facilitar seu dia.
+              Bem vindo a Muffins AI
+            </Text>
+            <Text style={styles.chatDescription}>
+              Como posso ser útil para você hoje?
             </Text>
             <TextInput
               style={styles.midInput}
@@ -246,9 +247,6 @@ export function Chat() {
                 </Text>
               </View>
             </TouchableHighlight>
-            <Text style={styles.chatDescription}>
-              Como posso ser útil para você hoje?
-            </Text>
           </View>
         )}
         {messages.length > 0 && (
@@ -262,9 +260,20 @@ export function Chat() {
       </ScrollView>
       {messages.length > 0 && (
         <View style={styles.chatInputContainer}>
+          <TouchableHighlight
+            onPress={clearChat}
+            underlayColor="transparent"
+            style={styles.clearChatButton}
+          >
+            <Ionicons
+              name="trash-outline"
+              size={24}
+              color={theme.tintTextColor}
+            />
+          </TouchableHighlight>
           <TextInput
             style={styles.input}
-            placeholder="Mensagem"
+            placeholder="Oque voce esta pensando?"
             placeholderTextColor={theme.placeholderTextColor}
             value={input}
             onChangeText={setInput}
@@ -293,11 +302,16 @@ const getStyles = (theme) =>
     scrollContentContainer: {
       flexGrow: 1,
     },
+    clearChatButton: {
+      marginRight: 10,
+      justifyContent: "center",
+      alignItems: "center",
+    },
     midChatInputWrapper: {
       flex: 1,
       justifyContent: "center",
       alignItems: "center",
-      padding: 20,
+      padding: 50,
     },
     assistantIntroText: {
       fontSize: 22,

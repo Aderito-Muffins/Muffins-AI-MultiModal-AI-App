@@ -1,0 +1,8 @@
+app/node_modules
+app/ios
+app/android
+server/node_modules
+.env
+dist
+yarn.lock
+package-lock.json
