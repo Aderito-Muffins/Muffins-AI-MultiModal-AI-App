@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "build": "yarn install && npx tsc",
+    "build": "npx tsc",
     "start": "node dist/index.js",
     "ngrok": "ngrok http 3050",
     "dev": "concurrently \"npx tsc --watch\" \"nodemon --exitcrash dist/index.js\"",
