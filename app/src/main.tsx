@@ -1,7 +1,7 @@
-import { useContext, useRef, useCallback } from "react";
-import { StyleSheet, Text, View, Button } from "react-native";
+import React, { useContext } from "react";
+import { StyleSheet, View } from "react-native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { Chat, Images, Settings, Assistant } from "./screens";
+import { Chat, Settings } from "./screens";
 import { Header } from "./components";
 import FeatherIcon from "@expo/vector-icons/Feather";
 import {
@@ -9,6 +9,12 @@ import {
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
 import { ThemeContext } from "./context";
+import {
+  useSharedValue,
+  withSpring,
+  withTiming,
+  useAnimatedStyle,
+} from "react-native-reanimated";
 
 const Tab = createBottomTabNavigator();
 
@@ -26,6 +32,8 @@ function MainComponent() {
           tabBarStyle: {
             borderTopWidth: 0,
             backgroundColor: theme.backgroundColor,
+            elevation: 5, // Sombra para o Tab Bar
+            paddingBottom: insets.bottom,
           },
         }}
       >
@@ -35,28 +43,13 @@ function MainComponent() {
           options={{
             header: () => <Header />,
             tabBarIcon: ({ color, size }) => (
-              <FeatherIcon name="message-circle" color={color} size={size} />
+              <AnimatedTabIcon
+                name="message-circle"
+                color={color}
+                size={size}
+              />
             ),
-          }}
-        />
-        <Tab.Screen
-          name="Assistente OpenAI"
-          component={Assistant}
-          options={{
-            header: () => <Header />,
-            tabBarIcon: ({ color, size }) => (
-              <FeatherIcon name="user" color={color} size={size} />
-            ),
-          }}
-        />
-        <Tab.Screen
-          name="Imagens"
-          component={Images}
-          options={{
-            header: () => <Header />,
-            tabBarIcon: ({ color, size }) => (
-              <FeatherIcon name="image" color={color} size={size} />
-            ),
+            tabBarLabel: () => null,
           }}
         />
         <Tab.Screen
@@ -65,8 +58,9 @@ function MainComponent() {
           options={{
             header: () => <Header />,
             tabBarIcon: ({ color, size }) => (
-              <FeatherIcon name="sliders" color={color} size={size} />
+              <AnimatedTabIcon name="settings" color={color} size={size} />
             ),
+            tabBarLabel: () => null, // Remove o nome da aba
           }}
         />
       </Tab.Navigator>
@@ -81,6 +75,28 @@ export function Main() {
     </SafeAreaProvider>
   );
 }
+
+const AnimatedTabIcon = ({ name, color, size }) => {
+  const scale = useSharedValue(1);
+
+  const animatedStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ scale: scale.value }],
+    };
+  });
+
+  return (
+    <View style={animatedStyle}>
+      <FeatherIcon
+        name={name}
+        color={color}
+        size={size}
+        onPressIn={() => (scale.value = withSpring(1.2))}
+        onPressOut={() => (scale.value = withSpring(1))}
+      />
+    </View>
+  );
+};
 
 const getStyles = ({ theme, insets }: { theme: any; insets: any }) =>
   StyleSheet.create({

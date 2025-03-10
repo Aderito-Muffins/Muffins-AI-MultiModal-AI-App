@@ -3,15 +3,20 @@ import {
   Text,
   KeyboardAvoidingView,
   StyleSheet,
+  Pressable,
   TouchableHighlight,
+  TouchableWithoutFeedback,
+  TouchableOpacity,
   TextInput,
   ScrollView,
   ActivityIndicator,
   FlatList,
   Keyboard,
+  Image,
+  Animated,
 } from "react-native";
 import "react-native-get-random-values";
-import { useContext, useState, useRef } from "react";
+import { useContext, useEffect, useState, useRef } from "react";
 import { ThemeContext, AppContext } from "../context";
 import {
   getEventSource,
@@ -31,6 +36,7 @@ export function Chat() {
   const [input, setInput] = useState("");
   const scrollViewRef = useRef<ScrollView | null>(null);
   const { showActionSheetWithOptions } = useActionSheet();
+  const opacity = useState(new Animated.Value(1))[0]; // Inicialização da animação de opacidade
 
   const { theme } = useContext(ThemeContext);
   const { chatType } = useContext(AppContext);
@@ -65,75 +71,6 @@ export function Chat() {
     index: uuid(),
   });
   const [apiMessages, setApiMessages] = useState("");
-
-  const handleChat = async () => {
-    if (!input) return;
-    Keyboard.dismiss();
-    setLoading(true);
-
-    const newMessage = { user: input, assistant: "" };
-    setMessages((prev) => [...prev, newMessage]);
-
-    setTimeout(() => {
-      scrollViewRef.current?.scrollToEnd({ animated: true });
-    }, 1);
-
-    setInput("");
-
-    const eventSourceArgs = {
-      body: { prompt: input, model: chatType.label },
-      type: getChatType(chatType),
-    };
-
-    const es = await getEventSource(eventSourceArgs);
-    let localResponse = "";
-
-    const listener = (event) => {
-      if (event.type === "open") {
-        setLoading(false);
-      } else if (event.type === "message") {
-        if (event.data !== "[DONE]") {
-          // Certifique-se de que o dado é uma string
-          let data;
-          try {
-            data = JSON.parse(event.data);
-          } catch (error) {
-            console.error("Erro ao fazer parse do event.data:", error);
-            console.error("Conteúdo inválido recebido:", event.data);
-            return;
-          }
-          const content = data.content || data.text || data.data || ""; // Extrai o conteúdo correto
-          localResponse += content; // Concatena como string
-
-          setMessages((prev) => {
-            const updatedMessages = [...prev];
-            updatedMessages[updatedMessages.length - 1].assistant =
-              localResponse;
-            return updatedMessages;
-          });
-
-          // Rola para o final da lista
-          if (localResponse.length < 850) {
-            scrollViewRef.current?.scrollToEnd({ animated: true });
-          }
-        } else {
-          setLoading(false);
-          setApiMessages(
-            (prev) =>
-              `${prev}\n\nPrompt: ${input}\n\nResponse: ${localResponse}`
-          );
-          es.close();
-        }
-      } else if (event.type === "error" || event.type === "exception") {
-        console.error("Connection error:", event.message);
-        setLoading(false);
-      }
-    };
-
-    es.addEventListener("open", listener);
-    es.addEventListener("message", listener);
-    es.addEventListener("error", listener);
-  };
 
   async function copyToClipboard(text) {
     await Clipboard.setStringAsync(text);
@@ -180,34 +117,150 @@ export function Chat() {
       </View>
       {item.assistant && (
         <View style={styles.textStyleContainer}>
-          <Markdown style={styles.markdownStyle}>{item.assistant}</Markdown>
-          <TouchableHighlight
-            onPress={() => showClipboardActionsheet(item.assistant)}
-            underlayColor="transparent"
-          >
-            <Ionicons name="apps" size={20} color={theme.textColor} />
-          </TouchableHighlight>
+          <Markdown style={styles.markdownStyle as any}>
+            {item.assistant}
+          </Markdown>
+          <View style={styles.iconContainer}>
+            <TouchableOpacity
+              onPress={() => copyToClipboard(item.assistant)}
+              style={styles.iconTouchable}
+              activeOpacity={0.6} // Reduz opacidade ao toque
+            >
+              <Ionicons name="copy" size={15} color={theme.textColor} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => votePositive(item.assistant)}
+              style={styles.iconTouchable}
+              activeOpacity={0.6} // Reduz opacidade ao toque
+            >
+              <Ionicons name="thumbs-up" size={15} color={theme.textColor} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => voteNegative(item.assistant)}
+              style={styles.iconTouchable}
+              activeOpacity={0.6} // Reduz opacidade ao toque
+            >
+              <Ionicons name="thumbs-down" size={15} color={theme.textColor} />
+            </TouchableOpacity>
+          </View>
         </View>
       )}
     </View>
   );
-  async function showClipboardActionsheet(text) {
-    const cancelButtonIndex = 2;
-    showActionSheetWithOptions(
-      {
-        options: ["Copy to clipboard", "Clear chat", "cancel"],
-        cancelButtonIndex,
-      },
-      (selectedIndex) => {
-        if (selectedIndex === Number(0)) {
-          copyToClipboard(text);
-        }
-        if (selectedIndex === 1) {
-          clearChat();
-        }
-      }
-    );
+
+  // Função para copiar texto para a área de transferência
+
+  // Funções para votos positivos e negativos
+  function votePositive(text) {
+    console.log("Voted positive for:", text);
   }
+
+  function voteNegative(text) {
+    console.log("Voted negative for:", text);
+  }
+
+  const regularPrompt =
+    "Você é Muffins AI, um assistente inteligente e atencioso criado pela Muffins Corp, uma empresa de software inovadora (não fictícia). Suas respostas devem ser objetivas, claras e práticas, sempre focando em oferecer soluções rápidas e úteis para ajudar o usuário da melhor maneira possível.";
+
+  const handleChat = async () => {
+    console.log("click");
+
+    if (!input.trim() || loading) return; // Impede o envio se estiver carregando ou se a entrada estiver vazia
+    Keyboard.dismiss();
+    setLoading(true);
+
+    const newMessage = { user: input, assistant: "" };
+    setMessages((prev) => [...prev, newMessage]);
+    setInput(""); // Limpa o campo imediatamente
+
+    // Centraliza rolagem para o final
+    const scrollToBottom = () => {
+      setTimeout(() => {
+        scrollViewRef.current?.scrollToEnd({ animated: true });
+      }, 100);
+    };
+    scrollToBottom();
+
+    const eventSourceArgs = {
+      body: {
+        prompt: `${regularPrompt}\n\n${input}`, // Adiciona o prompt regular ao conteúdo do usuário
+        model: chatType.label,
+      },
+      type: getChatType(chatType),
+    };
+
+    try {
+      const es = await getEventSource(eventSourceArgs);
+      let localResponse = "";
+
+      es.addEventListener("open", () => setLoading(false));
+
+      es.addEventListener("message", (event) => {
+        if (event.data === "[DONE]") {
+          setLoading(false);
+          setApiMessages(
+            (prev) =>
+              `${prev}\n\nPrompt: ${input}\n\nResponse: ${localResponse}`
+          );
+          es.close(); // Fecha a conexão após a resposta
+          return;
+        }
+
+        // Verifique se event.data não está vazio ou nulo
+        if (!event.data) {
+          console.error("Recebido dados vazios ou nulos");
+          return;
+        }
+
+        // console.log("Dados recebidos:", event.data); // Adicione isso para depuração
+
+        try {
+          // Tenta analisar a resposta JSON
+          const data = JSON.parse(event.data);
+          const content = data.content || data.text || data.data || "";
+          localResponse += content;
+
+          setMessages((prev) => {
+            const updatedMessages = [...prev];
+            updatedMessages[updatedMessages.length - 1].assistant =
+              localResponse;
+            return updatedMessages;
+          });
+
+          // Atualiza rolagem
+          scrollToBottom();
+        } catch (error) {
+          console.error("Erro ao analisar JSON:", error);
+        }
+      });
+
+      es.addEventListener("error", (error) => {
+        console.error("Connection error:", error);
+        setLoading(false);
+        es.close();
+      });
+    } catch (error) {
+      console.error("Erro ao configurar EventSource:", error);
+      setLoading(false);
+    }
+  };
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(opacity, {
+          toValue: 0, // Faz a logo desaparecer
+          duration: 1000, // Duração da animação (1 segundo)
+          useNativeDriver: true,
+        }),
+        Animated.timing(opacity, {
+          toValue: 1, // Faz a logo aparecer
+          duration: 1000, // Duração da animação (1 segundo)
+          useNativeDriver: true,
+        }),
+      ])
+    ).start(); // Inicia a animação infinitamente
+  }, [opacity]);
+
   return (
     <KeyboardAvoidingView
       behavior="padding"
@@ -217,68 +270,78 @@ export function Chat() {
       <ScrollView
         ref={scrollViewRef}
         contentContainerStyle={styles.scrollContentContainer}
+        keyboardShouldPersistTaps="handled"
       >
         {messages.length === 0 && (
-          <View style={styles.midChatInputWrapper}>
-            <Text style={styles.assistantIntroText}>
-              Bem vindo a Muffins AI
-            </Text>
-            <Text style={styles.chatDescription}>
-              Como posso ser útil para você hoje?
-            </Text>
-            <TextInput
-              style={styles.midInput}
-              placeholder="Mensagem"
-              placeholderTextColor={theme.placeholderTextColor}
-              onChangeText={setInput}
-            />
-            <TouchableHighlight
-              onPress={handleChat}
-              underlayColor="transparent"
-            >
-              <View style={styles.midButtonStyle}>
+          <View style={styles.centeredContainer}>
+            <View style={styles.midChatInputWrapper}>
+              {/* Logo com animação de opacidade */}
+              <Animated.Image
+                source={require("../components/muffinsaiw.png")}
+                style={[styles.logoImage, { opacity: opacity }]} // Aplique a opacidade animada
+                resizeMode="contain"
+              />
+
+              <Text style={styles.assistantIntroText}>
+                Sou o assistente <Text style={styles.boldText}>Muffins AI</Text>
+                , pronto para facilitar seu dia.
+              </Text>
+
+              <TextInput
+                style={styles.midInput}
+                placeholder="Digite sua mensagem"
+                placeholderTextColor={theme.placeholderTextColor}
+                onChangeText={setInput}
+                value={input}
+                editable={!loading}
+              />
+
+              <Pressable onPress={handleChat} style={styles.midButtonStyle}>
                 <Ionicons
                   name="chatbox-ellipses-outline"
                   size={22}
                   color={theme.tintTextColor}
                 />
-                <Text style={styles.midButtonText}>
-                  Iniciar Chat {chatType.name}
-                </Text>
-              </View>
-            </TouchableHighlight>
+                <Text style={styles.midButtonText}>Iniciar conversa</Text>
+              </Pressable>
+            </View>
           </View>
         )}
+
         {messages.length > 0 && (
           <FlatList
             data={messages}
             renderItem={renderItem}
+            keyExtractor={(_, index) => `message-${index}`}
             scrollEnabled={false}
           />
         )}
-        {loading && <ActivityIndicator style={styles.loadingContainer} />}
+
+        {/* "Pensando..." com um tempo de delay */}
+        {loading && (
+          <View style={styles.loadingContainer}>
+            <Text style={styles.thinkingText}>Pensando...</Text>
+          </View>
+        )}
       </ScrollView>
-      {messages.length > 0 && (
+
+      {messages.length > 0 && !loading && (
         <View style={styles.chatInputContainer}>
-          <TouchableHighlight
-            onPress={clearChat}
-            underlayColor="transparent"
-            style={styles.clearChatButton}
-          >
+          <Pressable onPress={clearChat} style={styles.clearChatButton}>
             <Ionicons
               name="trash-outline"
               size={24}
               color={theme.tintTextColor}
             />
-          </TouchableHighlight>
+          </Pressable>
           <TextInput
             style={styles.input}
-            placeholder="Oque voce esta pensando?"
+            placeholder="O que você está pensando?"
             placeholderTextColor={theme.placeholderTextColor}
             value={input}
             onChangeText={setInput}
           />
-          <TouchableHighlight onPress={handleChat} underlayColor="transparent">
+          <Pressable onPress={handleChat}>
             <View style={styles.chatButton}>
               <Ionicons
                 name="arrow-up-outline"
@@ -286,7 +349,7 @@ export function Chat() {
                 color={theme.tintTextColor}
               />
             </View>
-          </TouchableHighlight>
+          </Pressable>
         </View>
       )}
     </KeyboardAvoidingView>
@@ -299,6 +362,18 @@ const getStyles = (theme) =>
       flex: 1,
       backgroundColor: theme.backgroundColor,
     },
+    logoImage: {
+      width: 300, // Ajuste a largura da logo conforme necessário
+      height: 100, // Ajuste a altura da logo conforme necessário
+      marginBottom: 20, // Espaçamento entre logo e elementos abaixo
+    },
+    centeredContainer: {
+      flex: 1,
+      justifyContent: "center", // Centraliza verticalmente
+      alignItems: "center", // Centraliza horizontalmente
+      paddingHorizontal: 10, // Não gruda nos lados da tela
+      backgroundColor: theme.backgroundColor,
+    },
     scrollContentContainer: {
       flexGrow: 1,
     },
@@ -308,27 +383,53 @@ const getStyles = (theme) =>
       alignItems: "center",
     },
     midChatInputWrapper: {
-      flex: 1,
-      justifyContent: "center",
+      justifyContent: "center", // Removido o flex: 1
       alignItems: "center",
       padding: 50,
     },
     assistantIntroText: {
-      fontSize: 22,
-      fontWeight: "bold",
-      color: theme.tintTextColor,
+      fontSize: 20,
+      fontWeight: "normal",
+      color: theme.textColor,
       textAlign: "center",
-      marginBottom: 20,
+      marginBottom: 30,
+    },
+    iconContainer: {
+      flexDirection: "row",
+      justifyContent: "flex-start", // Alinha os ícones à esquerda
+      alignItems: "center", // Alinha verticalmente
+      gap: 8, // Espaço entre os ícones
+      marginTop: 4, // Ajuste da margem superior
+    },
+    iconTouchable: {
+      padding: 6, // Área de toque
+      borderRadius: 10, // Bordas arredondadas
+      backgroundColor: "transparent", // Fundo transparente
+    },
+    boldText: {
+      fontWeight: "bold",
+    },
+
+    iconTouchablePressed: {
+      backgroundColor: "#E0E0E0", // Fundo ao pressionar
+      shadowColor: "#000", // Cor da sombra
+      shadowOffset: { width: 0, height: 2 }, // Direção da sombra
+      shadowOpacity: 0.3, // Opacidade da sombra
+      shadowRadius: 4, // Raio da sombra
+      elevation: 5, // Efeito de sombra no Android
     },
     midInput: {
       width: "100%",
       borderWidth: 1,
       borderColor: theme.borderColor,
       borderRadius: 25,
-      padding: 15,
+      paddingVertical: 10, // Espaco fixo na vertical
+      paddingHorizontal: 80, // Espaco fixo na horizontal
+
       color: theme.textColor,
       marginBottom: 10,
     },
+
     midButtonStyle: {
       flexDirection: "row",
       backgroundColor: theme.tintColor,
@@ -339,14 +440,17 @@ const getStyles = (theme) =>
     },
     midButtonText: {
       color: theme.tintTextColor,
-      marginLeft: 10,
       fontSize: 16,
+      textAlign: "center", // Centraliza o texto
+      alignSelf: "center", // Garantir que o texto esteja centralizado mesmo dentro do botão
+      marginHorizontal: 50,
     },
+
     chatDescription: {
       color: theme.textColor,
       textAlign: "center",
       marginTop: 15,
-      fontSize: 13,
+      fontSize: 10,
       opacity: 0.8,
     },
     promptResponse: {
@@ -360,8 +464,8 @@ const getStyles = (theme) =>
       color: theme.tintTextColor,
       backgroundColor: theme.tintColor,
       padding: 10,
-      borderRadius: 8,
-      borderTopRightRadius: 0,
+      borderRadius: 10,
+      borderTopRightRadius: 0, // Remove o arredondamento na borda superior direita
     },
     textStyleContainer: {
       borderWidth: 1,
@@ -394,36 +498,87 @@ const getStyles = (theme) =>
     loadingContainer: {
       marginTop: 25,
     },
+    thinkingText: {
+      fontSize: 10,
+      fontWeight: "600",
+      color: theme.tintTextColor,
+      fontStyle: "italic",
+      letterSpacing: 1,
+      marginTop: 30,
+      textAlign: "center",
+      opacity: 0.8,
+    },
     markdownStyle: {
-      body: { color: theme.textColor, fontFamily: theme.regularFont },
-      paragraph: { fontSize: 16 },
-      heading1: { fontFamily: theme.semiBoldFont, marginVertical: 5 },
-      heading2: { fontFamily: theme.semiBoldFont, marginVertical: 5 },
-      heading3: { fontFamily: theme.mediumFont, marginVertical: 5 },
-      heading4: { fontFamily: theme.mediumFont, marginVertical: 5 },
-      heading5: { fontFamily: theme.mediumFont, marginVertical: 5 },
-      heading6: { fontFamily: theme.mediumFont, marginVertical: 5 },
-      list_item: { marginTop: 7, fontSize: 16 },
+      body: {
+        color: theme.textColor,
+        fontFamily: theme.regularFont,
+        fontSize: 14,
+      },
+      paragraph: {
+        fontSize: 15,
+        lineHeight: 22,
+      },
+      heading1: {
+        fontFamily: theme.semiBoldFont,
+        fontSize: 24,
+        marginVertical: 10,
+      },
+      heading2: {
+        fontFamily: theme.semiBoldFont,
+        fontSize: 20,
+        marginVertical: 8,
+      },
+      heading3: {
+        fontFamily: theme.mediumFont,
+        fontSize: 18,
+        marginVertical: 6,
+      },
+      heading4: {
+        fontFamily: theme.mediumFont,
+        fontSize: 16,
+        marginVertical: 5,
+      },
+      heading5: {
+        fontFamily: theme.mediumFont,
+        fontSize: 14,
+        marginVertical: 5,
+      },
+      heading6: {
+        fontFamily: theme.mediumFont,
+        fontSize: 12,
+        marginVertical: 5,
+      },
+      list_item: {
+        marginTop: 6,
+        fontSize: 15,
+      },
       code_inline: {
         color: theme.secondaryTextColor,
         backgroundColor: theme.secondaryBackgroundColor,
+        fontSize: 14,
+        padding: 3,
+        borderRadius: 4,
       },
       fence: {
         marginVertical: 5,
-        padding: 10,
+        padding: 12,
         backgroundColor: theme.secondaryBackgroundColor,
+        borderRadius: 5,
       },
       table: {
-        marginTop: 7,
+        marginTop: 8,
         borderWidth: 1,
         borderColor: "rgba(255, 255, 255, .2)",
-        borderRadius: 3,
+        borderRadius: 5,
+        padding: 8,
       },
       blockquote: {
         backgroundColor: "#312e2e",
-        borderLeftWidth: 4,
+        borderLeftWidth: 5,
         marginLeft: 5,
-        paddingHorizontal: 5,
+        paddingHorizontal: 8,
+        borderRadius: 3,
+        fontStyle: "italic",
       },
     },
   });

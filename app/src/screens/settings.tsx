@@ -8,6 +8,7 @@ import {
   Image,
 } from "react-native";
 import { useContext } from "react";
+import appConfig from "../../app.json";
 import { AppContext, ThemeContext } from "../context";
 import {
   AnthropicIcon,
@@ -16,6 +17,7 @@ import {
   MistralIcon,
   GeminiIcon,
 } from "../components/index";
+import Constants from "expo-constants";
 import FontAwesome from "@expo/vector-icons/FontAwesome5";
 import { IIconProps } from "../../types";
 import {
@@ -33,6 +35,9 @@ const _themes = Object.values(themes).map((v) => ({
   label: v.label,
 }));
 const diffusionImages = Object.values(ILLUSION_DIFFUSION_IMAGES);
+
+// Defina a versão do app
+const APP_VERSION = "1.0.0";
 
 export function Settings() {
   const { theme, setTheme, themeName } = useContext(ThemeContext);
@@ -152,75 +157,14 @@ export function Settings() {
           );
         })}
       </View>
-      {/* <View style={styles.titleContainer}>
-        <Text style={styles.mainText}>Modelo de Imagem</Text>
+
+      {/* Exibe a versão do app no final */}
+      <View style={styles.versionContainer}>
+        <Text style={styles.mainText}>Versão {appConfig.expo.version}</Text>
+        <Text style={styles.versionText}>
+          Muffins AI, desenvolvida pela Muffins Corp
+        </Text>
       </View>
-      <View style={styles.buttonContainer}>
-        {imageModels.map((model, index) => {
-          return (
-            <TouchableHighlight
-              key={index}
-              underlayColor="transparent"
-              onPress={() => {
-                setImageModel(model.label);
-              }}
-            >
-              <View
-                style={{
-                  ...styles.chatChoiceButton,
-                  ...getDynamicViewStyle(imageModel, model.label, theme),
-                }}
-              >
-                {renderIcon({
-                  type: model.label,
-                  props: {
-                    theme,
-                    size: 18,
-                    style: { marginRight: 8 },
-                    color:
-                      imageModel === model.label
-                        ? theme.tintTextColor
-                        : theme.textColor,
-                  },
-                })}
-                <Text
-                  style={{
-                    ...styles.chatTypeText,
-                    ...getDynamicTextStyle(imageModel, model.label, theme),
-                  }}
-                >
-                  {model.name}
-                </Text>
-              </View>
-            </TouchableHighlight>
-          );
-        })}
-        <View style={styles.titleContainer}>
-          <Text style={styles.mainText}>Base de Difusão Ilusória</Text>
-        </View>
-        <View style={styles.illusionImageContainer}>
-          {diffusionImages.map((model, index) => (
-            <TouchableHighlight
-              key={index}
-              underlayColor="transparent"
-              onPress={() => {
-                setIllusionImage(model.label);
-              }}
-            >
-              <Image
-                source={{ uri: model.image }}
-                style={{
-                  ...styles.illusionImage,
-                  borderColor:
-                    illusionImage === model.label
-                      ? theme.tintColor
-                      : theme.textColor,
-                }}
-              />
-            </TouchableHighlight>
-          ))}
-        </View>
-      </View> */}
     </ScrollView>
   );
 }
@@ -281,7 +225,21 @@ const getStyles = (theme: any) =>
     },
     mainText: {
       fontFamily: theme.boldFont,
-      fontSize: 18,
+      fontSize: 15,
       color: theme.textColor,
+    },
+    versionContainer: {
+      paddingVertical: 20,
+      paddingHorizontal: 15,
+      marginTop: 130,
+      alignItems: "center",
+      backgroundColor: theme.versionBackgroundColor || theme.backgroundColor,
+    },
+    versionText: {
+      fontFamily: theme.semiBoldFont,
+      fontSize: 10,
+      color: theme.textColor,
+      marginBottom: 5,
+      textAlign: "center",
     },
   });

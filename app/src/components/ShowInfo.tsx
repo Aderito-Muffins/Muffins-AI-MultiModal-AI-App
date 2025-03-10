@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 
 interface ShowInfoProps {
   message: string;
-  type: "success" | "error" | "info";
+  type: string;
   onClose: () => void;
 }
 

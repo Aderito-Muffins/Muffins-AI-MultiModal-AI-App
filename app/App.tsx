@@ -22,6 +22,7 @@ import {
   TouchableOpacity,
   SafeAreaView,
   ActivityIndicator,
+  Image,
   Alert,
 } from "react-native";
 
@@ -41,8 +42,8 @@ LogBox.ignoreLogs([
 ]);
 
 export default function App() {
-  const [theme, setTheme] = useState<string>("light");
-  const [chatType, setChatType] = useState<Model>(MODELS.gptTurbo);
+  const [theme, setTheme] = useState<string>("vercel");
+  const [chatType, setChatType] = useState<Model>(MODELS.cohere);
   const [_isLoggedIn, setIsLoggedIn] = useState<boolean>(false); // Iniciar como 'null' para aguardar a verificação
   const [imageModel, setImageModel] = useState<string>(
     IMAGE_MODELS.fastImage.label
@@ -53,15 +54,15 @@ export default function App() {
   );
   const { setLoading } = useLoading();
   const [fontsLoaded] = useFonts({
-    "Geist-Regular": require("./assets/fonts/Geist-Regular.otf"),
-    "Geist-Light": require("./assets/fonts/Geist-Light.otf"),
-    "Geist-Bold": require("./assets/fonts/Geist-Bold.otf"),
-    "Geist-Medium": require("./assets/fonts/Geist-Medium.otf"),
-    "Geist-Black": require("./assets/fonts/Geist-Black.otf"),
-    "Geist-SemiBold": require("./assets/fonts/Geist-SemiBold.otf"),
-    "Geist-Thin": require("./assets/fonts/Geist-Thin.otf"),
-    "Geist-UltraLight": require("./assets/fonts/Geist-UltraLight.otf"),
-    "Geist-UltraBlack": require("./assets/fonts/Geist-UltraBlack.otf"),
+    "SFProText-Regular": require("./assets/fonts/pro/SF-Pro-Display-Regular.otf"),
+    "SFProText-Light": require("./assets/fonts/pro/SF-Pro-Display-Light.otf"),
+    "SFProText-Bold": require("./assets/fonts/pro/SF-Pro-Display-Bold.otf"),
+    "SFProText-Medium": require("./assets/fonts/pro/SF-Pro-Display-Medium.otf"),
+    "SFProText-Black": require("./assets/fonts/pro/SF-Pro-Display-Black.otf"),
+    "SFProText-Semibold": require("./assets/fonts/pro/SF-Pro-Display-Semibold.otf"),
+    "SFProText-Thin": require("./assets/fonts/pro/SF-Pro-Display-Thin.otf"),
+    "SFProText-Ultralight": require("./assets/fonts/pro/SF-Pro-Display-Ultralight.otf"),
+    "SFProText-Ultrabold": require("./assets/fonts/pro/SF-Pro-Display-Black.otf"),
   });
   const configureStorage = async () => {
     try {
@@ -119,7 +120,7 @@ export default function App() {
       if (response.ok) {
         try {
           const data = await response.json();
-
+          console.log(data);
           // Verifica se o campo `data` e `isValid` existem e retorna o valor correto
           return data?.data?.isValid ?? false; // Retorna `false` caso `isValid` não seja encontrado
         } catch (error) {
@@ -348,20 +349,22 @@ interface ShowInfo {
   message: string;
   type: string;
 }
-
 const LoginScreen = ({ login, setIsLoggedIn }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false); // Estado para controlar o loading
-  const [showInfo, setShowInfo] = useState<ShowInfo | null>(null); // Estado para controlar a exibição do alerta customizado
+  const [loading, setLoading] = useState(false);
+  const [showInfo, setShowInfo] = useState<ShowInfo | null>(null);
+  const [register, setRegister] = useState(false);
 
-  const validateEmail = (email) => {
+  // Função utilitária para validação e limpeza de email
+  const validateAndCleanEmail = (email) => {
     const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-    return emailRegex.test(email);
+    const trimmedEmail = email.trim().toLowerCase();
+    return emailRegex.test(trimmedEmail) ? trimmedEmail : null;
   };
 
-  const handleLogin = async () => {
-    // Validação de campos vazios
+  // Função genérica para autenticação
+  const handleAuth = async (endpoint) => {
     if (!email || !password) {
       setShowInfo({
         message: "Por favor, preencha todos os campos.",
@@ -370,11 +373,8 @@ const LoginScreen = ({ login, setIsLoggedIn }) => {
       return;
     }
 
-    // Ajuste de formato do email (remoção de espaços, transformação para minúsculas)
-    const trimmedEmail = email.trim().toLowerCase(); // Remove espaços e coloca tudo em minúsculas
-
-    // Validação de formato de email
-    if (!validateEmail(trimmedEmail)) {
+    const validEmail = validateAndCleanEmail(email);
+    if (!validEmail) {
       setShowInfo({
         message: "Por favor, insira um endereço de email válido.",
         type: "error",
@@ -382,61 +382,49 @@ const LoginScreen = ({ login, setIsLoggedIn }) => {
       return;
     }
 
-    setLoading(true); // Ativa o estado de carregamento
-
+    setLoading(true);
     try {
-      console.log("Iniciando o processo de login...");
-
-      const response = await fetch(`${DOMAIN}/auth/login`, {
+      const response = await fetch(`${DOMAIN}/auth/${endpoint}`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: trimmedEmail, // Envia o email ajustado
-          password,
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: validEmail, password }),
       });
 
+      const data = await response.json();
       if (!response.ok) {
-        console.error("Erro durante o login. Status:", response.status);
-        const errorData = await response.json();
-        console.error("Detalhes do erro:", errorData);
         setShowInfo({
-          message: errorData?.message || "Erro ao autenticar",
+          message: data?.message || "Erro ao autenticar",
           type: "error",
         });
-        setLoading(false); // Desativa o estado de carregamento
         return;
       }
 
-      const data = await response.json();
-      console.log("Login bem-sucedido. Dados retornados:", data);
-
       if (data.data.token) {
         await saveToken(data.data.token);
-        console.log("Token salvo com sucesso.");
-        setShowInfo({ message: "Login bem-sucedido!", type: "success" });
+        setShowInfo({
+          message: `${
+            endpoint === "login" ? "Login" : "Registro"
+          } bem-sucedido!`,
+          type: "success",
+        });
       } else {
-        console.warn("Nenhum token fornecido na resposta.");
         setShowInfo({
           message: "Resposta inválida do servidor.",
           type: "error",
         });
       }
     } catch (error) {
-      console.error("Erro inesperado durante o login:", error);
       setShowInfo({ message: "Erro de conexão ao autenticar.", type: "error" });
     } finally {
-      setLoading(false); // Desativa o estado de carregamento, independentemente do sucesso ou erro
+      setLoading(false);
     }
   };
 
   const saveToken = async (token) => {
     try {
-      await AsyncStorage.setItem("authToken", token); // Salva o token no AsyncStorage
-      await AsyncStorage.setItem("isLoggedIn", "true"); // Define o estado de login como true
-      setIsLoggedIn(true); // Atualiza o estado para redirecionar para a tela principal
+      await AsyncStorage.setItem("authToken", token);
+      await AsyncStorage.setItem("isLoggedIn", "true");
+      setIsLoggedIn(true);
     } catch (error) {
       console.error("Erro ao salvar o token:", error);
     }
@@ -445,12 +433,13 @@ const LoginScreen = ({ login, setIsLoggedIn }) => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.formContainer}>
-        <Text style={styles.title}>Muffins AI</Text>
+        <Image
+          source={require("./src/components/muffinsaiw.png")}
+          style={styles.logo}
+          resizeMode="contain"
+        />
 
-        <Text style={styles.subtitle}>Entrar</Text>
-        <Text style={styles.description}>
-          Use seu email e senha para entrar
-        </Text>
+        <Text style={styles.subtitle}>{register ? "Registrar" : "Entrar"}</Text>
 
         <TextInput
           value={email}
@@ -468,36 +457,28 @@ const LoginScreen = ({ login, setIsLoggedIn }) => {
           style={styles.input}
         />
 
-        {/* Exibe um botão de login ou o indicador de carregamento, se estiver carregando */}
         <TouchableOpacity
           style={styles.loginButton}
-          onPress={handleLogin}
+          onPress={() => handleAuth(register ? "signin" : "login")}
           disabled={loading}
         >
           {loading ? (
-            <ActivityIndicator
-              size="small"
-              color="black"
-              style={styles.buttonText}
-            />
+            <ActivityIndicator size="small" color="black" />
           ) : (
-            <Text style={styles.buttonText}>Entrar</Text>
+            <Text style={styles.buttonText}>
+              {register ? "Registrar" : "Entrar"}
+            </Text>
           )}
         </TouchableOpacity>
 
         <Text style={styles.signupText}>
-          Não tem uma conta? <Text style={styles.linkText}>Cadastre-se</Text>{" "}
-          gratuitamente.
+          {register ? "Já tem uma conta? " : "Não tem uma conta? "}
+          <Text style={styles.linkText} onPress={() => setRegister(!register)}>
+            {register ? "Entrar" : "Cadastre-se"}
+          </Text>
         </Text>
       </View>
 
-      <Text style={styles.footer}>
-        Muffins AI, desenvolvida pela{" "}
-        <Text style={styles.linkText}>Muffins Corp</Text>.
-      </Text>
-      <Text style={styles.footerCopy}>Todos os direitos reservados.</Text>
-
-      {/* Exibe o alerta customizado, se necessário */}
       {showInfo && (
         <ShowInfo
           message={showInfo.message}
@@ -515,6 +496,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "black",
+  },
+  logo: {
+    width: 300, // Ajuste a largura da logo conforme necessário
+    height: 100, // Ajuste a altura da logo conforme necessário
+    marginBottom: 20, // Espaçamento entre logo e elementos abaixo
   },
   formContainer: {
     width: "80%",
