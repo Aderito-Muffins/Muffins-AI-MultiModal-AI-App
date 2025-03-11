@@ -1,0 +1,34 @@
+{
+  "cli": {
+    "version": ">= 15.0.14",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_ENV": "DEVELOPMENT",
+        "EXPO_PUBLIC_DEV_API_URL": "https://muffins-ai-mobile.onrender.com"
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_ENV": "PREVIEW",
+        "EXPO_PUBLIC_PREVIEW_API_URL": "https://muffins-ai-mobile.onrender.com"
+      }
+    },
+    "production": {
+      "distribution": "internal",
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_ENV": "PRODUCTION",
+        "EXPO_PUBLIC_PROD_API_URL": "https://muffins-ai-mobile.onrender.com"
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}

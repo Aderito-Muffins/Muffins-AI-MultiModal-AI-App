@@ -11,7 +11,9 @@
       "resizeMode": "contain",
       "backgroundColor": "#000000"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.muffinscorp.ai",
@@ -33,7 +35,7 @@
     },
     "extra": {
       "eas": {
-        "projectId": "your-project-id"
+        "projectId": "1f743cfa-76ab-4a29-9a82-b0edaf635a8a"
       }
     },
     "newArchEnabled": true,
@@ -50,6 +52,7 @@
           }
         }
       ]
-    ]
+    ],
+    "owner": "aderito_muffins"
   }
 }
