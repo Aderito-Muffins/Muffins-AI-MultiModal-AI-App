@@ -1,143 +1,101 @@
-[![Ceasefire Now](https://badge.techforpalestine.org/default)](https://techforpalestine.org/learn-more)
+Muffins AI Mobile
 
-# React Native AI
+Muffins AI Mobile is a cross-platform React Native app for iOS and Android that brings the power of Muffins AI to your phone.
+It supports real-time LLM chat, image generation, and AI-powered tools, offering a fast and intuitive mobile experience.
 
-Full stack framework for building cross-platform mobile AI apps supporting LLM real-time / streaming text and chat UIs, image services and natural language to images with multiple models, and image processing.
+Stay updated with new releases on the Muffins AI Blog
+.
 
-![React Native AI](https://i.imgur.com/AOOgBM0.png)
+✨ Features
 
-> Check out the video tutorial [here](https://www.youtube.com/watch?v=zf3NnTU5pr4)
+LLM Chat → Real-time conversations with multiple providers ( Gemini, DeepSeek, Llama, Playground).
 
-## Features
+Streaming Responses → Low latency, token-by-token AI replies.
 
-- LLM support for [OpenAI](https://openai.com/) ChatGPT, [Anthropic](https://anthropic.com) Claude, [Cohere](https://cohere.com/), Cohere Web, [Gemini](https://makersuite.google.com), and [Mistral](https://mistral.ai/)
-- An array of image models provided by [Fal.ai](https://www.fal.ai/)
-- Real-time / streaming responses from all providers
-- OpenAI Assistants including code interpreter and retrieval
-- Server proxy to easily enable authentication and authorization with auth provider of choice.
-- Theming (comes out of the box with 5 themes) - easily add additional themes with just a few lines of code.
-- Image processing with [ByteScale](https://bytescale.com/)
+AI Agents → Draft contracts, summarize documents, and run specialized workflows.
 
-![React Native AI Preview](https://i.imgur.com/D4LIVal.png)
+Image Generation → Create images from text prompts and edit them.
 
-## Usage
+Advanced Search → Semantic search across knowledge bases and documents.
 
-Generate a new project by running:
+Multi-Theme Support → Switch between light, dark, and custom themes.
 
-```sh
-npx rn-ai
-```
+Cross-Platform → Runs on iOS and Android with one codebase.
 
-Next, either configure your environment variables with the CLI, or do so later.
+🚀 Getting Started
+Requirements
 
-### Running the app
+Node.js >= 18
 
-Change into the app directory and run:
+React Native CLI or Expo
 
-```sh
-npm start
-```
+iOS or Android emulator / device
 
-### Running the server
+Installation
+# Clone repo
+git clone (https://github.com/Aderito-Muffins/muffins-ai-mobile.git)
 
-Change into the server directory and run:
+cd muffins-ai-mobile
 
-```sh
+# Install dependencies
+npm install
+
+Running the app
+# iOS
+npm run ios
+
+# Android
+npm run android
+
+Running the server (optional, for local dev)
+cd server
 npm run dev
-```
 
-### Environment variables
+⚙️ Environment Variables
 
-The server environment variables are available in `server/.env.example`. If already not present, update this file name to `.env` and configure server environment variables.
+Create a .env file in the project root:
 
-## Theming
+MUFFINS_AI_API_KEY=your_api_key
+OPENAI_API_KEY=your_openai_key
+ANTHROPIC_API_KEY=your_anthropic_key
+MISTRAL_API_KEY=your_mistral_key
+FAL_API_KEY=your_fal_key
 
-To add a new theme, open `app/src/theme.ts` and add a new theme with the following configuration:
+🎨 Theming
 
-```ts
-const christmas = {
-  // extend an existing theme or start from scratch
+Muffins AI Mobile includes several prebuilt themes.
+Add a new one in app/src/theme.ts:
+
+const muffins = {
   ...lightTheme,
-  name: 'Christmas',
-  label: 'christmas',
-  tintColor: '#ff0000',
-  textColor: '#378b29',
-  tabBarActiveTintColor: '#378b29',
-  tabBarInactiveTintColor: '#ff0000',
-  placeholderTextColor: '#378b29',
+  name: 'Muffins',
+  label: 'muffins',
+  tintColor: '#6a1b9a',
+  textColor: '#ffffff',
+  tabBarActiveTintColor: '#ab47bc',
+  tabBarInactiveTintColor: '#ce93d8',
+  placeholderTextColor: '#f3e5f5',
 }
-```
 
-At the bottom of the file, export the new theme:
 
-```ts
+Export it at the bottom of the file:
+
 export {
-  lightTheme, darkTheme, hackerNews, miami, vercel, christmas
+  lightTheme, darkTheme, muffins
 }
-```
 
-![React Native AI Themes](https://i.imgur.com/7Gser4F.png)
+📦 Roadmap
 
-## Configuring LLM Models
+ Offline mode with local LLMs
 
-Here is how to add new or remove existing LLM models.
+ Push notifications for AI agent updates
 
-### In the app
+ Voice input and text-to-speech responses
 
-You can add or configure a model by updating `MODELS` in `constants.ts`.
+ Workspace sync with Muffins AI web app
 
-For removing models, just remove the models you do not want to support.
+📜 License
 
-For adding models, once the model definition is added to the `MODELS` array, you should update `src/screens/chat.tsx` to support the new model:
-
-1. Create local state to hold new model data
-2. Update `chat()` function to handle new model type
-3. Create `generateModelReponse` function to call new model
-4. Update `getChatType` in `utils.ts` to configure the LLM type that will correspond with your server path.
-5. Render new model in UI
-
-```tsx
-{
-  chatType.label.includes('newModel') && (
-    <FlatList
-      data={newModelReponse.messages}
-      renderItem={renderItem}
-      scrollEnabled={false}
-    />
-  )
-}
-```
-
-### On the server
-
-Create a new file in the `server/src/chat` folder that corresponds to the model type you created in the mobile app. You can probably copy and re-use a lot of the streaming code from the other existing paths to get you started.
-
-Next, update `server/src/chat/chatRouter` to use the new route.
-
-## Configuring Image Models
-
-Here is how to add new or remove existing Image models.
-
-### In the app
-
-You can add or configure a model by updating `IMAGE_MODELS` in `constants.ts`.
-
-For removing models, just remove the models you do not want to support.
-
-For adding models, once the model definition is add to the `IMAGE_MODELS` array, you should update `src/screens/images.tsx` to support the new model.
-
-Main consideration is input. Does the model take text, image, or both as inputs?
-
-The app is configured to handle both, but you must update the `generate` function to pass the values to the API accordingly.
-
-### On the server
-
-#### Fal.ai
-
-In `server/src/images/fal`, update the handler function to take into account the new model.
-
-#### Other API providers
-
-Create a new file in `server/src/images/modelName`, update the handler function to handle the new API call.
-
-Next, update `server/src/images/imagesRouter` to use the new route.
+Muffins AI Mobile is developed by Adérito Muffins
+.
+All rights reserved © 2025 
